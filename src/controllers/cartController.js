@@ -48,6 +48,7 @@ const addToCart = async (req, res) => {
                 totalPrice: findProduct.price * quantity,
                 totalItems: 1
             })
+            
            // savedData=await cartModel.findOne({ userId: userId },{__v:0}).populate('items.productId', { __v: 0 })
             return res.status(201).send({ status: true, message: "Success", data: savedData })
         }
@@ -184,7 +185,7 @@ const getCart = async (req, res) => {
         if (!validator.isValidObjectId(req.params.userId))
             res.status(400).send({ status: false, message: "Invalid UserId" })
 
-        if (req.loggedInUserId !== userId)
+        if (req.loggedInUserId !== req.params.userId)
             return res.status(403).send({ status: false, message: "Autherization Failed" })
 
         // Checking User
