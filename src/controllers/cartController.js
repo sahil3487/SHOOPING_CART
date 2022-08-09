@@ -97,7 +97,7 @@ const addToCart = async (req, res) => {
 const updateCart = async (req, res) => {
     try {
         
-        let userId= req.body.userId
+        let userId= req.params.userId
         let productId = req.body.productId
         let removeProduct = req.body.removeProduct
 
