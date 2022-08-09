@@ -22,7 +22,7 @@ const orderSchema = new mongoose.Schema({
     items: [
         {
             productId: { type: ObjectId, ref: 'Product', required: true }    // [{pid1,pqnt1},{pid2,pqnt2},{pid3,pqnt3},{pid4,pqnt4},v]
-            , quantity: { type: Number, require: true, min: 1 }, _id: false
+            , quantity: { type: Number, required: true, min: 1 }, _id: false
         }
     ],
 
@@ -54,13 +54,10 @@ const orderSchema = new mongoose.Schema({
     },
 
 
-
-
-
 }
     , { timestamps: true });
 
-// 
+
 
 
 module.exports = mongoose.model('Order', orderSchema);

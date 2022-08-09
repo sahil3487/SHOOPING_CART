@@ -175,13 +175,13 @@ const loginUser = async function (req, res) {
         const findUser = await userModel.findOne({ email });            //Db call
 
         if (!findUser) {
-            return res.status(404).send({ status: false, message: "Incorrect email Id" });
+            return res.status(401).send({ status: false, message: "Incorrect email Id" });
         }
 
         //compare password & encrypt password
         let hashedPassword = await bcrypt.compare(password, findUser.password)
 
-        if (!hashedPassword) return res.status(404).send({ status: false, msg: "Login failed! Wrong password." });
+        if (!hashedPassword) return res.status(401).send({ status: false, msg: "Login failed! Wrong password." });
 
         //Token Generation
         var token = jwt.sign({
@@ -193,8 +193,7 @@ const loginUser = async function (req, res) {
         });
 
 
-        return res.status(200).send({
-            status: true, message: "login successfully", data: { userId: findUser._id.toString(), token: token },
+        return res.status(200).send({status: true, message: "login successfully", data: { userId: findUser._id.toString(), token: token },
         });
 
     } catch (error) {

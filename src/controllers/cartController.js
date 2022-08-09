@@ -11,7 +11,10 @@ const addToCart = async (req, res) => {
     try {
         let userId = req.params.userId
         let productId = req.body.productId
-        let quantity = req.body.quantity || 1
+        let quantity = req.body.quantity || 1      //it takes default quantity 1 or any number of quantity  
+
+        if(req.body.quantity==0)
+        return res.status(400).send({status:false,msg: "quantity cant be 0"})
 
         if (!validator.isValidObjectId(userId)) {
             return res.status(400).send({ status: false, msg: "userId is invalid" });
@@ -19,7 +22,7 @@ const addToCart = async (req, res) => {
         const findUser = await userModel.findById({ _id: userId })
         if (!findUser) return res.status(404).send({ status: false, msg: "user not found" })
 
-        if (req.loggedInUserId !== userId)
+        if (req.loggedInUserId !== req.params.userId)
             return res.status(403).send({ status: false, message: "Not Authorised" })
 
         if (!validator.isValid(productId)) {
@@ -57,15 +60,18 @@ const addToCart = async (req, res) => {
         let update = {};
         update.$inc = {
             totalPrice: (findProduct.price * quantity),
-            'items.$[element].quantity': quantity
+            'items.$[element].quantity': quantity               //$elements has all the prdct and qnty ,here we r fetching qnty of 1 specific prdct
         }
 
         if (cartExist.items.find((x) => {
-            if (x.productId.toString() == productId) {
+            if (x.productId.toString() == productId) {          //if the same product is added into cart
                 return true;
             }
         })) {
-            const savedData = await cartModel.findOneAndUpdate({ _id: cartExist._id }, update, { new: true, "arrayFilters": [{ "element.productId": productId }] }).populate('items.productId', { __v: 0 })
+            const savedData = await cartModel.findOneAndUpdate(
+                { _id: cartExist._id }, update
+                , { new: true, "arrayFilters": [{ "element.productId": productId }] }  //product which we want to add into cart
+                ).populate('items.productId', { __v: 0 })                              //arrayFilters idendifies the given condition
 
             return res.status(201).send({ status: true, message: "Success", data: savedData })
         }
@@ -90,29 +96,50 @@ const addToCart = async (req, res) => {
 //-----------------------------------------updateCart-------------------------------
 const updateCart = async (req, res) => {
     try {
-        let errMsg = {}
-        errMsg.userId = (req.params.userId === undefined) ? "UserId required" : validator.isValidObjectId(req.params.userId) ? false : "Invalid UserId"
-        errMsg.productId = (req.body.productId === undefined) ? "ProductId Required!" : validator.isValidObjectId(req.body.productId) ? false : "Invalid ProductId"
-        errMsg.removeProduct = (req.body.removeProduct === undefined) ? "removeProduct Required!" : !isNaN(parseInt(req.body.removeProduct)) && (parseInt(req.body.removeProduct) == 0 || parseInt(req.body.removeProduct) == 1) ? false : "Invalid removeProduct"
-        Object.keys(errMsg).forEach(key => errMsg[key] === false && delete errMsg[key])
-        if (Object.keys(errMsg).length !== 0) return res.status(400).send({ status: false, msg: errMsg })
+        
+        let userId= req.body.userId
+        let productId = req.body.productId
+        let removeProduct = req.body.removeProduct
 
-        if (req.loggedInUserId !== req.params.userId)
+        if (!validator.isValid(userId)) {
+            return res.status(400).send({ status: false, msg: "userId is required" });
+        }
+
+        if (!validator.isValidObjectId(userId)) {
+            return res.status(400).send({ status: false, msg: "userId is invalid" });
+        }
+        
+        if (!validator.isValid(productId)) {
+            return res.status(400).send({ status: false, msg: "productId is required" });
+        }
+
+        if (!validator.isValidObjectId(productId)) {
+            return res.status(400).send({ status: false, msg: "productId is invalid" });
+        }
+        
+        if (!validator.isValid(removeProduct)) {
+            return res.status(400).send({ status: false, msg: "removeProduct  key is required" });
+        }
+
+       if(!(!isNaN(parseInt(removeProduct)) && (parseInt(removeProduct) == 0 || parseInt(removeProduct) == 1)))
+          return res.status(400).send({status: false, msg: "removeProduct is invalid"});
+
+        if (req.loggedInUserId !== userId)
             return res.status(403).send({ status: false, message: "Autherization Failed" })
 
         // Checking User
         let user;
-        if (!(user = await userModel.findById(req.params.userId)))
+        if (!(user = await userModel.findById(userId)))
             return res.status(404).send({ status: false, message: "User DoesNot Exist" })
         let product;
-        if (!(product = await productModel.findById(req.body.productId)) || product.isDeleted == true)
+        if (!(product = await productModel.findById(productId)) || product.isDeleted == true)
             return res.status(404).send({ status: false, message: "Product DoesNot Exist" })
         let cart;
         if (!(cart = await cartModel.findOne({ userId: user._id })))
             return res.status(404).send({ status: false, message: "Cart DoesNot Exist" })
 
         // removeProduct==0
-        if (req.body.removeProduct == 0) {
+        if (removeProduct == 0) {
 
             let productQuantity;
 
